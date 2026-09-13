@@ -1,4 +1,4 @@
-// if a subroute doesn't have an explicity defined embed.ts, 
+// if a subroute doesn't have an explicity defined embed.ts,
 // it will inherit the embed from it's parent up untill the root /
 
 export enum Crawler {
@@ -18,7 +18,9 @@ export interface EmbedContext {
 
 export type EmbedHandler = (ctx: EmbedContext) => Response | Promise<Response>;
 
-const modules = import.meta.glob<{ default: EmbedHandler }>("/src/routes/**/embed.ts", { eager: true });
+const modules = import.meta.glob<{ default: EmbedHandler }>("/src/routes/**/embed.ts", {
+	eager: true,
+});
 
 function buildMatcher(routePath: string): { regex: RegExp | null; paramNames: string[] } {
 	if (routePath === "") {
@@ -54,7 +56,9 @@ function detectCrawler(url: URL): Crawler | null {
 	return null;
 }
 
-export function resolveEmbed(pathname: string): { handler: EmbedHandler; params: Record<string, string> } | null {
+export function resolveEmbed(
+	pathname: string,
+): { handler: EmbedHandler; params: Record<string, string> } | null {
 	let best: { handler: EmbedHandler; params: Record<string, string>; depth: number } | null = null;
 	const segments = pathname.split("/").filter(Boolean);
 
@@ -66,7 +70,7 @@ export function resolveEmbed(pathname: string): { handler: EmbedHandler; params:
 		const { regex, paramNames } = buildMatcher(routePath);
 		const depth = routePath.split("/").filter(Boolean).length;
 
-		// root path "default" embed 
+		// root path "default" embed
 		if (regex === null) {
 			if (!best) {
 				best = { handler: module.default, params: {}, depth: 0 };
@@ -92,12 +96,19 @@ export function resolveEmbed(pathname: string): { handler: EmbedHandler; params:
 	return best;
 }
 
+export function getCanonicalUrl(url: URL): URL {
+	const canonical = new URL(url.href);
+	canonical.pathname = url.pathname.replace(/^\/embed/, "") || "/";
+	canonical.searchParams.delete("crawler");
+	return canonical;
+}
+
 export async function renderEmbed(
 	handler: EmbedHandler,
-	ctx: { params: Record<string, string>; url: URL }
+	ctx: { params: Record<string, string>; url: URL },
 ): Promise<Response> {
 	try {
-		const canonicalUrl = ctx.url.href.replace("/embed/", "/");
+		const canonicalUrl = getCanonicalUrl(ctx.url).href;
 		const crawler = detectCrawler(ctx.url);
 
 		return await handler({ params: ctx.params, crawler, canonicalUrl });

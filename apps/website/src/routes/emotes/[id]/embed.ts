@@ -89,7 +89,6 @@ const embed: EmbedHandler = async ({ params, crawler, canonicalUrl }) => {
 	const isWideEmote = embedImage.width / embedImage.height > WIDE_ASPECT_THRESHOLD;
 	let cardType = isWideEmote ? CARD_TYPE_LARGE : CARD_TYPE_SMALL;
 
-	// platform-specific adjustments
 	switch(crawler){
 		case Crawler.Discord:
 			// discord only platform that supports gifs
